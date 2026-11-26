@@ -5,8 +5,8 @@
   agent graphs. N-Queens uses one constraint agent per row and column.
 * :mod:`~sheaf_admm.data.loaders` — memory-mapped :class:`ImageDataset` and
   :class:`PuzzleDataset` with format-contract validation.
-* ``build_maze`` / ``build_mnist`` / ``build_sudoku`` / ``build_N_Queens`` —
-  argparse CLIs for dataset construction.
+* ``build_maze`` / ``build_mnist`` / ``build_geometric`` / ``build_sudoku`` /
+  ``build_N_Queens`` — argparse CLIs for dataset construction.
 """
 
 from __future__ import annotations

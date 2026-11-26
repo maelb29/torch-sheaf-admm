@@ -229,6 +229,7 @@ def make_task(name: str, **kwargs):
     tasks = {
         "maze": MazeTask,
         "mnist": MNISTTask,
+        "geometric": MNISTTask,
         "sudoku": SudokuTask,
         "n_queens": NQueensTask,
     }

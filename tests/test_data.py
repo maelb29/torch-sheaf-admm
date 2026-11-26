@@ -293,3 +293,22 @@ def test_nqueens_builder_rejects_invalid_target():
     }
     with np.testing.assert_raises_regex(ValueError, "target must contain 4 queens"):
         _validate_example(example, board_size=4)
+
+
+def test_geometric_builder_writes_image_dataset_usable_by_classification_task(tmp_path):
+    from sheaf_admm.data.build_geometric import GeometricConfig, build
+    from sheaf_admm.data.loaders import ImageDataset
+    from sheaf_admm.training.tasks import MNISTTask, make_task
+
+    build(GeometricConfig(train_size=12, test_size=5, noise=0.0, seed=3, output_dir=tmp_path))
+    dataset = ImageDataset(tmp_path, "train")
+    assert dataset.images.shape == (12, 8, 8, 1)
+    assert dataset.labels.shape == (12,)
+    assert set(np.unique(dataset.labels)).issubset({0, 1, 2, 3})
+
+    batch = next(dataset.iter_batches(batch_size=4))
+    task = make_task("geometric", patch_size=4, stride=4, num_classes=4)
+    assert isinstance(task, MNISTTask)
+    fwd, targets, _ = task.prepare(batch)
+    assert fwd["patches"].shape == (4, 4, 4, 4, 1)
+    assert targets["labels"].shape == (4,)

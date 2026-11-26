@@ -54,6 +54,13 @@ uv run python -m sheaf_admm.data.build_maze \
 uv run python -m sheaf_admm.data.build_mnist \
   --output-dir datasets/mnist
 
+uv run python -m sheaf_admm.data.build_geometric \
+  --train-size 2000 \
+  --test-size 500 \
+  --noise 0.05 \
+  --seed 0 \
+  --output-dir datasets/geometric
+
 uv run python -m sheaf_admm.data.build_sudoku \
   --output-dir datasets/sudoku_easy
 
@@ -63,8 +70,9 @@ uv run python -m sheaf_admm.data.build_N_Queens \
   --test-size 1000
 ```
 
-The MNIST, Sudoku, and N-Queens builders download their source datasets on first
-run. The N-Queens builder keeps only 10x10 puzzles with one valid solution; omit
+The geometric builder generates synthetic 8x8 shape images locally. The MNIST,
+Sudoku, and N-Queens builders download their source datasets on first run. The
+N-Queens builder keeps only 10x10 puzzles with one valid solution; omit
 `--train-size` and `--test-size` to use every qualifying example in each official
 split.
 
@@ -80,6 +88,10 @@ uv run python scripts/train.py +experiment=maze_mpnn
 # MNIST
 uv run python scripts/train.py +experiment=mnist_sheaf
 uv run python scripts/train.py +experiment=mnist_mpnn
+
+# Geometric shapes (synthetic 8x8 images, four 4x4 non-overlapping agent views)
+uv run python scripts/train.py +experiment=geometric_sheaf
+uv run python scripts/train.py +experiment=geometric_mpnn
 
 # Sudoku
 uv run python scripts/train.py +experiment=sudoku_sheaf
@@ -136,7 +148,7 @@ The frozen JAX reference fixtures are bundled, so these checks use Torch only.
 
 The model and ADMM update rules follow the original implementation. This port
 uses PyTorch modules, autograd, optimizers, and CUDA tensors in place of JAX,
-Flax, and Optax. It keeps the seven shipped experiment configurations and their
+Flax, and Optax. It keeps the ten shipped experiment configurations and their
 Hydra options. The Python import path remains `sheaf_admm`, while the project
 and installable distribution are named `torch-sheaf-admm`.
 Repeated CUDA steps use `torch.compile` by default; set
@@ -148,7 +160,7 @@ script is provided for trusted legacy Maze Sheaf checkpoints, as described in
 
 The checks above compare fixed JAX reference outputs with PyTorch on CPU and
 CUDA, including model outputs, ADMM behavior, and LoRA restriction maps. They
-also exercise all seven configurations. These checks establish parity for the
+also exercise all ten configurations. These checks establish parity for the
 covered cases; separately initialized runs can differ because the frameworks
 use different random number generators.
 
