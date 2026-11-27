@@ -20,8 +20,9 @@ class ModelConfig:
     num_classes: int = 6  # per-agent output channels (grid: vocab; sudoku: 10; cls: #classes)
 
     # --- stalk dims ---
-    d_v: int = 64  # vertex stalk (comm_dim)
-    d_e: int = 32  # edge stalk
+    # Config files may use the explicit aliases ``agent_state_dim`` / ``message_dim``.
+    d_v: int = 64  # agent state size (vertex stalk, comm_dim)
+    d_e: int = 32  # message size per shared item / edge (edge stalk)
 
     # --- encoder ---
     encoder_arch: str = "mlp_v2"  # "mlp_v2" (maze) | "mlp" (mnist) | "sudoku"
@@ -51,7 +52,8 @@ class ModelConfig:
     gd_momentum: float = 0.9
 
     # --- restriction maps / geometry ---
-    rm_sharing: str = "directional"  # global | directional | sudoku
+    rm_sharing: str = "directional"  # global | directional | sudoku (alias: slot)
+    rm_num_slots: int = 9  # per-slot maps for rm_sharing=sudoku/slot (N-Queens w/ diags: 4N)
     rm_init: str = "orthonormal"  # orthonormal | default | identity | soft_slice (sudoku)
     rm_mode: str = "fixed"  # fixed | context (LoRA)
     lora_rank: int = 4
@@ -73,7 +75,7 @@ class ModelConfig:
     # --- recurrent-MPNN baseline (ignored by SheafADMMModel) ---
     mpnn_message_dim: int | None = None  # message width (defaults to d_e)
     mpnn_aggregation: str = "max"  # add | mean | symnorm | max
-    mpnn_edge_type_mode: str = "spatial"  # shared (1) | spatial (4/8) | slot (9, sudoku)
+    mpnn_edge_type_mode: str = "spatial"  # shared (1) | spatial (4/8) | slot (rm_num_slots)
     mpnn_graph_readout: str = "per_node"  # per_node (maze/sudoku) | graph (MNIST)
 
     # --- decoder ---
@@ -86,6 +88,13 @@ class ModelConfig:
     dec_norm_type: str = "rmsnorm"
 
 
+# Explicit names accepted in config files, mapped to the short internal fields.
+FIELD_ALIASES = {
+    "agent_state_dim": "d_v",  # size of each agent's state vector
+    "message_dim": "d_e",  # size of the message exchanged on each edge
+}
+
+
 def model_config_from_dict(d: dict[str, Any]) -> ModelConfig:
     """Build a :class:`ModelConfig`, coercing list fields to tuples and dropping ``None`` overrides.
 
@@ -93,6 +102,11 @@ def model_config_from_dict(d: dict[str, Any]) -> ModelConfig:
     ``model`` + ``solver`` Hydra subtrees.
     """
     out = dict(d)
+    for alias, field_name in FIELD_ALIASES.items():
+        if alias in out:
+            if field_name in out:
+                raise KeyError(f"set either {alias!r} or {field_name!r}, not both")
+            out[field_name] = out.pop(alias)
     # Legacy checkpoints/configs may carry pre-public no-op fields. They never
     # selected code paths in the public model, so ignore them on load.
     for key in ("task", "mpnn_num_rounds"):
